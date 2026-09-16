@@ -1,14 +1,1 @@
-{
-  "auth_users": [
-    {
-      "email": "eyad@test.com",
-      "username": "eyad alsherif",
-      "passwordHash": "$2b$10$YbGXXnWRopAoyCTLskC9/elWTx80n0DyoGdEuJTxO2qLFMpYykWwG",
-      "is_verified": false,
-      "id": "6045921"
-    }
-  ],
-  "users": [{"name": "eyad"}, {"name": "ahmed"}],
-  "books": [],
-  "orders": []
-}
+{"auth_users":[{"email":"eyad@test.com","username":"eyad alsherif","passwordHash":"$2b$10$YbGXXnWRopAoyCTLskC9/elWTx80n0DyoGdEuJTxO2qLFMpYykWwG","is_verified":false,"id":"6045921"},{"username":"Yahia","email":"yahia@test.com","passwordHash":"$2b$10$edjESOFJvXmQ1iU5p87bX.Do2mK8wwr8m17xsCAi9rau9as6Oyama","is_verified":false,"id":"9848686"}],"users":[{"name":"eyad"},{"name":"ahmed"}],"books":[],"orders":[]}
