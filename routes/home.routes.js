@@ -1,11 +1,12 @@
-import { Router } from "express";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import express from "express";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
 
-export const homeRouter = Router();
+export const homeRouter = express.Router();
 
 homeRouter.get("/home",authMiddleware,(req, res) => {
     res.json({
-      message: `Welcome ${req.user.username} to the home page!`,
+      message: "Welcome to home",
+      user: req.user
     });
   }
 );
