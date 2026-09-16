@@ -1,75 +1,162 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+import { createDB } from "../db.js";
 
 export const authRouter = Router();
 
-/**
- * @swagger /auth/login
- * POST /auth/login
- *
- * @description Authenticate a user with email and password.
- *
- * @body {string} email - User's email address
- * @body {string} password - User's password
- *
- * @success {200} { message: string }
- *   Returns a success message on successful login.
- *
- * @error {422} { errors: { [field]: { errors: string[] } } }
- *   Validation failed (missing or invalid fields).
- *   Example: { errors: { email: { errors: ["Required"] }, password: { errors: ["Required"] } } }
- *
- * @error {500} { error: string }
- *   Internal server error.
- *   Example: { error: "something went wrong" }
- */
-authRouter.post("/login", (req, res) => {
+const db = createDB();
 
-  // TODO: implement actual authentication (bcrypt, JWT, etc.)
-  res.json({ message: "login endpoint" });
+const JWT_SECRET = process.env.JWT_SECRET || "my-super-secret-key";
+
+authRouter.post("/register", async (req, res, next) => {
+  try {
+    const {
+      username,
+      email,
+      password,
+      password_confirmation,
+    } = req.body;
+    // Validation
+    const errors = {};
+    if (!username) {
+      errors.username = {
+        errors: ["Username is required"],
+      };
+    }
+    if (!email) {
+      errors.email = {
+        errors: ["Email is required"],
+      };
+    }
+    if (!password) {
+      errors.password = {
+        errors: ["Password is required"],
+      };
+    }
+    if (!password_confirmation) {
+      errors.password_confirmation = {
+        errors: ["Password confirmation is required"],
+      };
+    }
+    if (
+      password &&
+      password_confirmation &&
+      password !== password_confirmation
+    ) {
+      errors.password_confirmation = {
+        errors: ["Passwords do not match"],
+      };
+    }
+    if (Object.keys(errors).length > 0) {
+      return res.status(422).json({
+        errors,
+      });
+    }
+
+    // Check if email already exists
+    const users = await db.getAll("auth_users");
+
+    const existingUser = users.find(
+      (user) => user.email === email
+    );
+
+    if (existingUser) {
+      return res.status(422).json({
+        errors: {
+          email: {
+            errors: ["Email already exists"],
+          },
+        },
+      });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await db.create("auth_users", {
+      username,
+      email,
+      passwordHash,
+      is_verified: false,
+    });
+    res.status(201).json({
+      message: "Registration successful",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
-/**
- * @swagger /auth/register
- * POST /auth/register
- *
- * @description Register a new user account.
- *
- * @body {string} username - Desired username
- * @body {string} email - User's email address
- * @body {string} password - User's password
- * @body {string} password_confirmation - Password confirmation (must match password)
- *
- * @success {201} { message: string }
- *   Returns a success message on successful registration.
- *
- * @error {422} { errors: { [field]: { errors: string[] } } }
- *   Validation failed (missing fields or passwords don't match).
- *   Example: { errors: { email: { errors: ["Required"] }, password_confirmation: { errors: ["Passwords do not match"] } } }
- *
- * @error {500} { error: string }
- *   Internal server error.
- *   Example: { error: "something went wrong" }
- */
-authRouter.post("/register", (req, res) => {
-
-  // TODO: implement actual registration (hash password, save user, etc.)
-  res.status(201).json({ message: "register endpoint" });
+authRouter.post("/login", async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const errors = {};
+    if (!email) {
+      errors.email = {
+        errors: ["Email is required"],
+      };
+    }
+    if (!password) {
+      errors.password = {
+        errors: ["Password is required"],
+      };
+    }
+    if (Object.keys(errors).length > 0) {
+      return res.status(422).json({
+        errors,
+      });
+    }
+    const users = await db.getAll("auth_users");
+    const user = users.find(
+      (user) => user.email === email
+    );
+    if (!user) {
+      return res.status(401).json({
+        error: "Invalid email or password",
+      });
+    }
+      const passwordMatch = await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
+    if (!passwordMatch) {
+      return res.status(401).json({
+        error: "Invalid email or password",
+      });
+    }
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 1000,
+    });
+    res.json({
+      message: "Login successful",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
+authRouter.post("/logout", (req, res, next) => {
+  try {
+    res.clearCookie("token");
 
-/**
- * @swagger /auth/logout
- * POST /auth/logout
- *
- * @description Log out the current user (invalidate session/token).
- *
- * @success {200} { message: string }
- *   Returns a success message on successful logout.
- *
- * @error {500} { error: string }
- *   Internal server error.
- *   Example: { error: "something went wrong" }
- */
-authRouter.post("/logout", (req, res) => {
-  // TODO: implement actual logout (destroy session, invalidate token, etc.)
-  res.json({ message: "logout endpoint" });
+    res.json({
+      message: "Logout successful",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
