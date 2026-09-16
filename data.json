@@ -1,0 +1,14 @@
+{
+  "auth_users": [
+    {
+      "email": "eyad@test.com",
+      "username": "eyad alsherif",
+      "passwordHash": "$2b$10$YbGXXnWRopAoyCTLskC9/elWTx80n0DyoGdEuJTxO2qLFMpYykWwG",
+      "is_verified": false,
+      "id": "6045921"
+    }
+  ],
+  "users": [{"name": "eyad"}, {"name": "ahmed"}],
+  "books": [],
+  "orders": []
+}
